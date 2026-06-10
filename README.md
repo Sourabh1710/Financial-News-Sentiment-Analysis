@@ -21,7 +21,8 @@ The challenge is that financial language is a dialect, not just English. "Downgr
 
 This project builds the core pipeline from scratch: classify financial headlines at near-human accuracy using a domain-fine-tuned BERT model, aggregate daily signals, and measure how well they predict the next trading session.
 
-![EDA Overview](outputs/eda_sentiment_distribution.png)
+![EDA Overview_1](outputs/eda_sentiment_distribution_1.png)
+![EDA Overview_2](outputs/eda_sentiment_distribution_2.png)
 *Label distribution across 5,842 Financial PhraseBank sentences. Negative headlines (14.7%) are the minority class — and the hardest to get right.*
 
 ---
@@ -65,7 +66,8 @@ Only 14.7% of Financial PhraseBank headlines are negative, reflecting the inhere
 
 **Business recommendation:** A production deployment would monitor incoming headlines per ticker, compute a 3-day rolling average sentiment score, and trigger an alert when it crosses two standard deviations below the baseline. This catches deteriorating sentiment before it fully prices into the stock — the actionable window for a risk desk.
 
-![Sentiment vs Price](outputs/sentiment_price_correlation.png)
+![Sentiment vs Price_1](outputs/sentiment_price_correlation_1.png)
+![Sentiment vs Price_2](outputs/sentiment_price_correlation_2.png)
 *Daily aggregate sentiment score vs. next-day return for AAPL over two years. The regression line is positive and statistically significant — bullish days tend to be followed by slight upward moves, and vice versa.*
 
 ---
