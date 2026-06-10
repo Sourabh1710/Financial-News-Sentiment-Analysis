@@ -40,7 +40,7 @@ This project builds the core pipeline from scratch: classify financial headlines
 
 > **On the negative F1 column:** Headline accuracy is a misleading metric here. SVM scores 67.2% overall but achieves negative F1 of only 0.14 — it almost never correctly identifies bearish headlines. Since early detection of negative signals is the highest-value use case for a trading desk or risk system, this is a failure in practice. FinBERT's 0.88 negative F1 is the number that matters.
 
-![ROC and Confusion Matrix](outputs/model_comparison_1.png)(outputs/model_comparison_1.png)
+![ROC and Confusion Matrix](outputs/model_comparison_1.png)(outputs/model_comparison_2.png)
 *Left: accuracy by model with majority-class baseline (53.6%). Right: per-class F1 breakdown — the gap in negative F1 between SVM and FinBERT is the core result of this project.*
 
 ---
