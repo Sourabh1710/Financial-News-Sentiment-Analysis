@@ -23,6 +23,7 @@ This project builds the core pipeline from scratch: classify financial headlines
 
 ![EDA Overview_1](outputs/eda_sentiment_distribution_1.png)
 ![EDA Overview_2](outputs/eda_sentiment_distribution_2.png)
+
 *Label distribution across 5,842 Financial PhraseBank sentences. Negative headlines (14.7%) are the minority class — and the hardest to get right.*
 
 ---
