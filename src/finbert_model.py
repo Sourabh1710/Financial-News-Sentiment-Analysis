@@ -1,10 +1,6 @@
 """
 Step 4: FinBERT Sentiment Model
 
-Uses ProsusAI/finbert — a BERT model pre-trained on 4.9B words of
-financial text (Reuters, Bloomberg, earnings calls, analyst reports)
-and fine-tuned on the Financial PhraseBank.
-
 """
 
 import time
@@ -43,6 +39,10 @@ class FinBERTSentiment:
     """
     Wrapper around HuggingFace ProsusAI/finbert for easy inference.
 
+    Usage:
+        model = FinBERTSentiment()
+        result = model.predict("Operating profit rose 14% on strong demand")
+        # -> {'label': 'positive', 'score': 0.9823, 'all_scores': {...}}
     """
 
     def __init__(self, model_id: str = FINBERT_MODEL_ID, device: str = None):
@@ -69,7 +69,7 @@ class FinBERTSentiment:
         # Load the classification model (BERT + linear head for 3 classes)
         self.model = AutoModelForSequenceClassification.from_pretrained(model_id)
         self.model.to(device)
-        self.model.eval()  
+        self.model.eval()   # disable dropout for inference
 
         # HuggingFace pipeline wraps tokenize + forward pass + decode into one call
         self.pipe = pipeline(
@@ -81,12 +81,23 @@ class FinBERTSentiment:
         )
 
         elapsed = time.time() - t0
-        print(f"  Model loaded in {elapsed:.1f}s")
+        print(f"  ✓ Model loaded in {elapsed:.1f}s")
         print(f"  Parameters: ~{sum(p.numel() for p in self.model.parameters())/1e6:.0f}M")
 
     def predict(self, text: str) -> dict:
         """
         Classify a single sentence.
+
+        Returns:
+            {
+              'label': 'positive',
+              'score': 0.9823,         # confidence for predicted label
+              'all_scores': {           # softmax probabilities for all 3
+                'positive': 0.9823,
+                'negative': 0.0102,
+                'neutral':  0.0075,
+              }
+            }
         """
         # Truncate long texts to BERT's max sequence length (512 tokens)
         text = str(text)[:512]
@@ -147,7 +158,7 @@ def evaluate_finbert(model: FinBERTSentiment, X_test, y_test) -> dict:
     """
     Run FinBERT on the test set and print evaluation metrics.
     """
-    print("\n  Running FinBERT inference on test set ")
+    print("\n  Running FinBERT inference on test set...")
     t0 = time.time()
 
     batch_results = model.predict_batch(X_test.tolist(), batch_size=16)
@@ -172,6 +183,7 @@ def evaluate_finbert(model: FinBERTSentiment, X_test, y_test) -> dict:
 def show_example_predictions(model: FinBERTSentiment) -> None:
     """
     Show FinBERT's reasoning on sample sentences.
+
     """
     examples = [
         ("Operating profit rose 14% on strong demand for products",   "positive"),
@@ -202,6 +214,7 @@ def show_example_predictions(model: FinBERTSentiment) -> None:
 class FinBERTFallback:
     """
     Offline fallback used when ProsusAI/finbert cannot be downloaded.
+
     """
     import pickle as _pickle
 
@@ -215,9 +228,7 @@ class FinBERTFallback:
             self._pipeline = pickle.load(f)
 
         self._preprocessor = FinancialTextPreprocessor()
-        print("  ⚠  HuggingFace unavailable at the moment.")
-        print("  ✓  Using classical LogReg as offline stand-in.")
-        print("  -> Locally: swap FinBERTFallback() for FinBERTSentiment()")
+        print("    Using classical LogReg as offline stand-in for FinBERT.")
 
     def predict(self, text: str) -> dict:
         cleaned = self._preprocessor.clean(str(text))
@@ -243,11 +254,14 @@ class FinBERTFallback:
 def get_sentiment_model():
     """
     function: returns real FinBERT if available, fallback otherwise.
+
     """
     try:
         model = FinBERTSentiment()
         return model
-    except Exception:
+    except Exception as e:
+        print(f"    Could not load ProsusAI/finbert: {type(e).__name__}: {e}")
+        print(f"    Falling back to classical LogReg - predictions will NOT be FinBERT.")
         return FinBERTFallback()
 
 
@@ -273,4 +287,3 @@ def run_finbert_evaluation():
 if __name__ == "__main__":
     model, result = run_finbert_evaluation()
     print(f"\n  Model accuracy: {result['accuracy']*100:.2f}%")
-    print(f"  (Real FinBERT on this dataset achieves ~{result['accuracy']*100:.2f}%)")

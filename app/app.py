@@ -15,8 +15,9 @@ from pathlib import Path
 
 import streamlit as st
 
-
-BASE_DIR = Path(__file__).resolve().parent.parent
+# Path setup
+BASE_DIR    = Path(__file__).resolve().parent.parent
+OUTPUTS_DIR = BASE_DIR / "outputs"
 sys.path.insert(0, str(BASE_DIR / "src"))
 
 from data_loader    import load_dataset
@@ -75,19 +76,51 @@ def load_data():
     return load_dataset()
 
 
-@st.cache_data(show_spinner="Scoring all headlines (one-time setup)...")
+@st.cache_data(show_spinner="Loading scored headlines...")
 def get_scored_headlines():
+    """
+    Load precomputed FinBERT scores from outputs/scored_headlines.csv.
+
+    """
+    precomputed = OUTPUTS_DIR / "scored_headlines.csv"
+    if precomputed.exists():
+        return pd.read_csv(precomputed)
+
+    st.warning(
+        "⚠️ outputs/scored_headlines.csv not found — scoring all headlines "
+    )
     df = load_data()
     return score_all_headlines(df)
 
 
-@st.cache_data(show_spinner="Fetching stock data...")
+@st.cache_data(show_spinner="Loading stock data...")
 def get_stocks(tickers):
+    """
+    Load precomputed stock data from outputs/stock_data.csv.
+
+    """
+    precomputed = OUTPUTS_DIR / "stock_data.csv"
+    if precomputed.exists():
+        df = pd.read_csv(precomputed, parse_dates=["date"])
+        if set(tickers).issubset(set(df["ticker"].unique())):
+            return df
+
+    st.warning(
+        "⚠️ outputs/stock_data.csv missing or incomplete — fetching live "
+    )
     return get_stock_data(tickers=tickers)
 
 
-@st.cache_data(show_spinner="Computing daily sentiment...")
-def get_daily_sentiment(scored_hash):
+@st.cache_data(show_spinner="Loading daily sentiment...")
+def get_daily_sentiment():
+    """
+    Load precomputed daily sentiment aggregates.
+    
+    """
+    precomputed = OUTPUTS_DIR / "daily_sentiment.csv"
+    if precomputed.exists():
+        return pd.read_csv(precomputed)
+
     scored = get_scored_headlines()
     return aggregate_daily_sentiment(scored)
 
@@ -117,7 +150,7 @@ tab1, tab2, tab3, tab4 = st.tabs([
 ])
 
 
-# TAB 1 - Live Classifier
+# TAB 1 — Live Classifier
 with tab1:
     st.subheader("Classify a Financial Headline")
     st.markdown(
@@ -209,7 +242,7 @@ with tab1:
                 )
 
 
-# TAB 2 - Model Comparison
+# TAB 2 — Model Comparison
 with tab2:
     st.subheader("Model Performance Comparison")
     st.markdown(
@@ -217,7 +250,7 @@ with tab2:
         "(20% holdout, stratified split, same random seed)."
     )
 
-    # Hardcoded results table (replace with real eval when FinBERT available)
+    # Hardcoded results table
     results_df = pd.DataFrame([
         {"Model": "VADER (rule-based)",    "Accuracy": 37.55, "Neg F1": 0.12, "Neu F1": 0.46, "Pos F1": 0.36, "Training": "None"},
         {"Model": "TF-IDF + LogReg",       "Accuracy": 66.38, "Neg F1": 0.40, "Neu F1": 0.74, "Pos F1": 0.69, "Training": "< 1 min"},
@@ -275,8 +308,7 @@ with tab2:
         st.dataframe(results_df, use_container_width=True)
 
 
-# TAB 3 - Sentiment vs. Price
-
+# TAB 3 — Sentiment vs. Price
 with tab3:
     st.subheader(f"Sentiment vs. Next-Day Price Movement — {selected_ticker}")
     st.markdown(
@@ -286,11 +318,9 @@ with tab3:
     )
 
     with st.spinner("Preparing correlation data..."):
-        scored_df       = get_scored_headlines()
-        daily_sentiment = get_daily_sentiment(hash(selected_ticker))
+        daily_sentiment = get_daily_sentiment()
         stock_df        = get_stocks(DEFAULT_TICKERS)
 
-    from correlation import compute_correlation
     from scipy import stats
 
     price_df = stock_df[stock_df["ticker"] == selected_ticker].reset_index(drop=True)
@@ -301,6 +331,15 @@ with tab3:
     # Remove NaN
     mask = ~(np.isnan(x) | np.isnan(y))
     x, y = x[mask], y[mask]
+
+    if len(x) < 2:
+        st.error(
+            f"Not enough overlapping data for {selected_ticker} "
+            f"({len(x)} day(s) found, need at least 2). "
+            "This usually means stock_data.csv doesn't contain this "
+            "ticker — check outputs/stock_data.csv covers all 5 tickers."
+        )
+        st.stop()
 
     pearson_r, pearson_p   = stats.pearsonr(x, y)
     spearman_r, spearman_p = stats.spearmanr(x, y)

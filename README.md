@@ -125,6 +125,9 @@ pip install -r requirements.txt
 # Train and save classical models (~30 seconds)
 python src/classical_models.py
 
+# Run this, once after cloning to regenerate the precomputed outputs, or use the committed outputs/*.csv directly. 
+python src/correlation.py 
+
 # Launch the dashboard (downloads FinBERT ~440MB on first run)
 streamlit run app/app.py
 ```
