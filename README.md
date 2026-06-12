@@ -21,7 +21,8 @@ The challenge is that financial language is a dialect, not just English. "Downgr
 
 This project builds the core pipeline from scratch: classify financial headlines with a domain-pretrained BERT model, aggregate daily signals, and test whether they predict the next trading session — while being explicit about what the result does and doesn't prove.
 
-![Label Distribution](outputs/eda_sentiment_distribution.png)
+![Label Distribution_1](outputs/eda_sentiment_distribution_1.png)
+![Label Distribution_2](outputs/eda_sentiment_distribution_2.png)
 *Label distribution across 5,842 Financial PhraseBank sentences. Negative headlines (14.7%) are the minority class — and the hardest to get right.*
 
 ---
@@ -41,7 +42,8 @@ This project builds the core pipeline from scratch: classify financial headlines
 
 > **On the negative F1 column:** Headline accuracy is a misleading metric here. SVM scores 67.2% overall but achieves negative F1 of only 0.14 — it almost never correctly identifies bearish headlines. FinBERT, used **zero-shot** (no task-specific fine-tuning), more than quadruples this to 0.60. Since early detection of negative signals is the highest-value use case for a trading desk, this is the comparison that matters — and it holds even before any fine-tuning.
 
-![Model Comparison](outputs/model_comparison.png)
+![Model Comparison_1](outputs/model_comparison_1.png)
+![Model Comparison_2](outputs/model_comparison_2.png)
 *Left: accuracy by model with majority-class baseline (53.6%). Right: per-class F1 — FinBERT's gain on the negative class is the core classification result.*
 
 ---
@@ -116,7 +118,7 @@ What this section of the project demonstrates is the **pipeline**, not a market 
 ## Quickstart
 
 ```bash
-git clone https://github.com/yourusername/financial-sentiment
+git clone https://github.com/Sourabh1710/Financial-News-Sentiment-Analysis
 cd financial-sentiment
 
 pip install -r requirements.txt
