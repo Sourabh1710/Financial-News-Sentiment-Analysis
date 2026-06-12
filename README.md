@@ -9,7 +9,7 @@
 > **Does today's financial news predict tomorrow's stock move?**  
 > An NLP pipeline that classifies financial headlines with FinBERT (75.1% accuracy, zero-shot) and builds a complete sentiment-price correlation pipeline — including an honest negative result that exposes a real data limitation rather than overclaiming a trading signal.
 
-[Live Demo →](https://your-app.streamlit.app) &nbsp;|&nbsp; [Key Findings ↓](#-what-the-model-found)
+[Live Demo →](https://sourabhsonker-finance-news-sentiment-analysis.streamlit.app/) &nbsp;|&nbsp; [Key Findings ↓](#-what-the-model-found)
 
 ---
 
