@@ -150,6 +150,9 @@ def train_and_evaluate():
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.2, random_state=42, stratify=y
     )
+    _, X_test_raw, _, _ = train_test_split(
+        X_raw, y, test_size=0.2, random_state=42, stratify=y
+    )
     print(f"      Train: {len(X_train):,}  |  Test: {len(X_test):,}")
 
     # Train and evaluate each model
@@ -176,7 +179,7 @@ def train_and_evaluate():
         print(f"   Model saved to {model_path.name}")
 
     # VADER (no training) 
-    vader_result = run_vader_baseline(X_raw[len(X_train):], y_test)
+    vader_result = run_vader_baseline(X_test_raw, y_test)
     results.append(vader_result)
 
     # Summary comparison

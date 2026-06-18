@@ -9,7 +9,11 @@
 > **Does today's financial news predict tomorrow's stock move?**  
 > An NLP pipeline that classifies financial headlines with FinBERT (75.1% accuracy, zero-shot) and builds a complete sentiment-price correlation pipeline — including an honest negative result that exposes a real data limitation rather than overclaiming a trading signal.
 
+<<<<<<< HEAD
 [Live Demo](https://sourabhsonker-finance-news-sentiment-analysis.streamlit.app/) &nbsp;
+=======
+[Streamlit App Link](https://sourabhsonker-finance-news-sentiment-analysis.streamlit.app/) &nbsp;|&nbsp; [Key Findings ↓](#-what-the-model-found)
+>>>>>>> b9da70c (updated notebooks and Readme)
 
 ---
 
@@ -17,7 +21,7 @@
 
 News sentiment is a live trading signal. Bloomberg Terminal charges ~$24,000/year per seat partly for its sentiment analytics layer. RavenPack — which processes financial news into structured sentiment feeds for hedge funds — was acquired in 2023 at a reported $600M valuation.
 
-The challenge is that financial language is a dialect, not just English. "Downgrade", "coupon", "spread", "rally", "guidance" mean specific things in financial context that no general-purpose NLP tool understands. VADER, the standard rule-based sentiment tool, scores only 37.6% on financial headlines — worse than random on a 3-class problem.
+The challenge is that financial language is a dialect, not just English. "Downgrade", "coupon", "spread", "rally", "guidance" mean specific things in financial context that no general-purpose NLP tool understands. VADER, the standard rule-based sentiment tool, scores only 49.9% on financial headlines — below the 53.6% you'd get by just guessing "neutral" every time.
 
 This project builds the core pipeline from scratch: classify financial headlines with a domain-pretrained BERT model, aggregate daily signals, and test whether they predict the next trading session — while being explicit about what the result does and doesn't prove.
 
@@ -31,7 +35,7 @@ This project builds the core pipeline from scratch: classify financial headlines
 
 | Model | Accuracy | Negative F1 | Neutral F1 | Positive F1 | Notes |
 |---|---|---|---|---|---|
-| VADER (rule-based) | 37.6% | 0.12 | 0.46 | 0.36 | No financial domain knowledge |
+| VADER (rule-based) | 49.9% | 0.29 | 0.56 | 0.50 | No financial domain knowledge |
 | TF-IDF + Logistic Regression | 66.4% | 0.40 | 0.74 | 0.69 | Bag-of-words, ~30s to train |
 | TF-IDF + SVM | 67.2% | 0.14 | 0.75 | 0.71 | Best classical model |
 | **FinBERT (ProsusAI)** | **75.1%** | **0.60** | **0.78** | **0.79** | **Zero-shot — no fine-tuning** |
@@ -50,8 +54,8 @@ This project builds the core pipeline from scratch: classify financial headlines
 
 ## What the Model Found
 
-**1. Generic NLP is blind to financial language (VADER: 37.6%)**  
-VADER was built on social media and general English. It has no concept of "downgrade" as bearish or "raised guidance" as bullish. Its 37.6% accuracy on financial headlines is worse than a coin flip on a 3-class problem — the motivation for every other design decision in this project.
+**1. Generic NLP is blind to financial language (VADER: 49.9%)**  
+VADER was built on social media and general English. It has no concept of "downgrade" as bearish or "raised guidance" as bullish. Its 49.9% accuracy on financial headlines is *below* the 53.6% you'd get by always predicting "neutral" — a domain-agnostic sentiment tool adds negative value here, which is the motivation for every other design decision in this project.
 
 **2. Bag-of-words models plateau around 67% — an architectural ceiling, not a tuning problem**  
 TF-IDF treats each word independently. "The company did not profit" and "the company recorded a profit" both contain the token "profit" and score identically. Logistic Regression and SVM both land around 67% regardless of hyperparameter tuning, because neither has a mechanism for understanding word order, negation, or context.
@@ -141,6 +145,12 @@ The app opens at `localhost:8501`. Tab 1 lets you paste any financial headline f
 ## Project Structure
 
 ```
+├── notebooks/
+│   ├── 01_eda.ipynb                       # Class imbalance, headline length, do "signal words" correlate with sentiment?
+│   ├── 02_preprocessing_experiments.ipynb # Naive vs domain-aware preprocessing — what's actually protected, what's missing
+│   ├── 03_baseline_models.ipynb           # VADER/LogReg/SVM with confusion matrices + a negation ablation
+│   ├── 04_finbert_evaluation.ipynb        # FinBERT zero-shot results, confidence analysis, AllAgree-subset discussion
+│   └── 05_sentiment_price_correlation.ipynb # The correlation pipeline + the null-result discussion
 ├── src/
 │   ├── data_loader.py              # Dataset loading, EDA, class balance analysis
 │   ├── preprocessor.py             # Finance-aware NLP pipeline (domain vocab preservation)
@@ -160,11 +170,46 @@ The app opens at `localhost:8501`. Tab 1 lets you paste any financial headline f
 
 ---
 
+## Notebooks
+
+The `src/` modules are the production pipeline; `notebooks/` is the
+exploration trail that justifies the decisions encoded in that pipeline and
+in the "Technical Approach" section above.
+
+`01_eda.ipynb` confirms the class imbalance (53.6% neutral) and empirically
+tests whether the "financial signal words" protected in `preprocessor.py`
+actually correlate with sentiment in this corpus (they do — sentences
+containing "downgrade" or "default" are 60-90%+ negative vs. ~15%
+dataset-wide).
+
+`02_preprocessing_experiments.ipynb` tests that protection directly against
+a naive NLTK pipeline and finds the protection list is mostly a no-op (those
+words were never stopwords) — the real effect is preserving negation
+(`no`/`not`/`nor`). It also surfaces two gaps: directional words like "down"
+are stripped as ordinary stopwords, and single-digit dollar amounts (`$3`)
+are destroyed by tokenisation.
+
+`03_baseline_models.ipynb` reproduces the VADER/LogReg/SVM results with
+confusion matrices, runs an ablation training the same LogReg with naive
+vs. domain-aware preprocessing, and **documents a bug found and fixed in
+`classical_models.py`**: the original VADER evaluation compared predictions
+on one set of sentences against labels for a different set, producing a
+meaningless 37.6% — the corrected number is 49.9%, which is reflected
+throughout this README.
+
+`04_finbert_evaluation.ipynb` and `05_sentiment_price_correlation.ipynb`
+reproduce the FinBERT and correlation results from `outputs/scored_headlines.csv`
+and `outputs/stock_data.csv` — run `python src/correlation.py` first if those
+files don't contain your own FinBERT/yfinance output.
+
+---
+
 ## Possible next steps
 
 - **Fine-tune FinBERT** on the 80% training split (the original target was 90%+ accuracy). Zero-shot already gets 75.1% — fine-tuning on this dataset's specific label distribution would likely close most of the gap to the AllAgree-subset benchmarks.
 - **Real-dated headlines** via a financial news API would let the correlation pipeline (already built and tested) produce a meaningful result instead of a methodology demo.
 - **Confidence-based filtering**: only act on predictions above ~70% confidence, given the near-tie example found in Tab 1.
+- **Fix the two preprocessing gaps** found in `02_preprocessing_experiments.ipynb`: add directional words (down/up/above/below) to `FINANCIAL_SIGNAL_WORDS`, and handle currency amounts as single tokens before tokenisation.
 
 ---
 

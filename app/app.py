@@ -282,10 +282,10 @@ with tab2:
         [
             {
                 "Model": "VADER (rule-based)",
-                "Accuracy": 37.55,
-                "Neg F1": 0.12,
-                "Neu F1": 0.46,
-                "Pos F1": 0.36,
+                "Accuracy": 49.87,
+                "Neg F1": 0.29,
+                "Neu F1": 0.56,
+                "Pos F1": 0.50,
                 "Training": "None",
             },
             {
